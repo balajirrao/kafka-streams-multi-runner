@@ -100,9 +100,9 @@ public final class Worker {
 
 
         builder.addStateStore(Stores.keyValueStoreBuilder(
-                                Stores.persistentKeyValueStore("Counts"),
+                                Stores.inMemoryKeyValueStore("Counts"),
                                 Serdes.String(),
-                                Serdes.Integer())
+                                Serdes.Integer()).withCachingEnabled()
                         .withLoggingEnabled(new HashMap<String, String>() {{
                             put("segment.bytes", "20480");
                         }}),

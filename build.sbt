@@ -8,6 +8,7 @@ lazy val coordinator = (project in file("coordinator")).settings(
   assembly / assemblyJarName := "coordinator.jar",
   assembly / assemblyMergeStrategy := {
     case x if x.endsWith("module-info.class") => MergeStrategy.discard
+    case x if x.endsWith("io.netty.versions.properties") => MergeStrategy.discard
     case x =>
       val oldStrategy = (assembly / assemblyMergeStrategy).value
       oldStrategy(x)
@@ -18,6 +19,7 @@ lazy val worker = (project in file("worker")).settings(
   assembly / mainClass := Some("Worker"),
   assembly / assemblyMergeStrategy := {
     case x if x.endsWith("module-info.class") => MergeStrategy.discard
+    case x if x.endsWith("io.netty.versions.properties") => MergeStrategy.discard
     case x =>
       val oldStrategy = (assembly / assemblyMergeStrategy).value
       oldStrategy(x)
@@ -32,6 +34,5 @@ lazy val root = (project in file("."))
 
 resolvers += Resolver.mavenLocal
 
-ThisBuild / libraryDependencies += "org.apache.kafka" % "kafka-streams" % "3.5.0-SNAPSHOT"
 ThisBuild / libraryDependencies += "com.lihaoyi" %% "os-lib" % "0.9.0"
 ThisBuild / libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.4.5"

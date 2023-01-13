@@ -1,3 +1,4 @@
+import io.github.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.apache.kafka.clients.admin.{AdminClient, NewTopic}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.common.serialization.Serdes
@@ -6,15 +7,17 @@ import os.{Path, SubProcess}
 
 import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
-import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
-import scala.concurrent.ExecutionContext.Implicits.global
 
 object Coordinator extends scala.App {
   val workerJar = "worker/target/scala-2.13/worker.jar"
 
   val appId = java.util.UUID.randomUUID().toString
   println(s"appid: $appId")
+
+//  implicit val config = EmbeddedKafkaConfig(kafkaPort = 9085)
+//
+//  EmbeddedKafka.start()
 
   val props = new Properties
   props.putIfAbsent(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9085")
@@ -36,14 +39,16 @@ object Coordinator extends scala.App {
   val processes = new ConcurrentHashMap[Int, SubProcess]()
 
   Runtime.getRuntime.addShutdownHook(
-    new Thread("streams-wordcount-shutdown-hook") {
-      override def run(): Unit = {
-        processes.asScala.iterator.foreach { p =>
-          p._2.destroy()
+    {
+//      EmbeddedKafka.stop()
+      new Thread("streams-wordcount-shutdown-hook") {
+        override def run(): Unit = {
+          processes.asScala.iterator.foreach { p =>
+            p._2.destroy()
+          }
         }
       }
-    }
-  )
+    }  )
 
   Thread.sleep(2000)
 
@@ -51,8 +56,8 @@ object Coordinator extends scala.App {
 
   val t = new Thread(() =>
 //    runProgram(Seq(6, 7, 7, 0, 4, 6))
-//    runProgram(Seq(7, 6, 2))
-    runProgram(LazyList.from(Iterator.continually(scala.util.Random.nextInt(10))))
+    runProgram(Seq(7, 6, 2))
+//    runProgram(LazyList.from(Iterator.continually(scala.util.Random.nextInt(10))))
   )
   t.setDaemon(true)
   t.start()
@@ -64,6 +69,8 @@ object Coordinator extends scala.App {
       )
       Thread.sleep(5)
     }
+
+//    EmbeddedKafka.stop()
   }
 
   def runProgram(p: Seq[Int]): Unit = {
