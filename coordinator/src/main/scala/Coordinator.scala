@@ -1,4 +1,3 @@
-import io.github.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.apache.kafka.clients.admin.{AdminClient, NewTopic}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.common.serialization.Serdes
@@ -10,14 +9,11 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.jdk.CollectionConverters._
 
 object Coordinator extends scala.App {
+
   val workerJar = "worker/target/scala-2.13/worker.jar"
 
   val appId = java.util.UUID.randomUUID().toString
   println(s"appid: $appId")
-
-//  implicit val config = EmbeddedKafkaConfig(kafkaPort = 9085)
-//
-//  EmbeddedKafka.start()
 
   val props = new Properties
   props.putIfAbsent(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9085")
@@ -38,29 +34,40 @@ object Coordinator extends scala.App {
 
   val processes = new ConcurrentHashMap[Int, SubProcess]()
 
-  Runtime.getRuntime.addShutdownHook(
-    {
+  Runtime.getRuntime.addShutdownHook({
 //      EmbeddedKafka.stop()
-      new Thread("streams-wordcount-shutdown-hook") {
-        override def run(): Unit = {
-          processes.asScala.iterator.foreach { p =>
-            p._2.destroy()
-          }
+    new Thread("streams-wordcount-shutdown-hook") {
+      override def run(): Unit = {
+        processes.asScala.iterator.foreach { p =>
+          p._2.destroy()
         }
       }
-    }  )
+    }
+  })
 
   Thread.sleep(2000)
 
-  //    runProgram(Seq(6, 7, 7, 0, 4, 6)
-
   val t = new Thread(() =>
-//    runProgram(Seq(6, 7, 7, 0, 4, 6))
-    runProgram(Seq(7, 6, 2))
-//    runProgram(LazyList.from(Iterator.continually(scala.util.Random.nextInt(10))))
+    if (args.length > 0) {
+      val program = args.map(_.toInt)
+      runProgram(program)
+    } else {
+      runProgram(
+        LazyList.from(Iterator.continually(scala.util.Random.nextInt(10)))
+      )
+    }
   )
+
   t.setDaemon(true)
   t.start()
+
+//  //    runProgram(Seq(6, 7, 7, 0, 4, 6)
+//
+//  val t = new Thread(() =>
+////    runProgram(Seq(6, 7, 7, 0, 4, 6))
+////    runProgram(Seq(7, 6, 2))
+////    runProgram(LazyList.from(Iterator.continually(scala.util.Random.nextInt(10))))
+//  )
 
   (1 to 1000000).foreach { i =>
     1 to 100 foreach { x =>
@@ -69,18 +76,16 @@ object Coordinator extends scala.App {
       )
       Thread.sleep(5)
     }
-
-//    EmbeddedKafka.stop()
   }
 
   def runProgram(p: Seq[Int]): Unit = {
     p.zipWithIndex.foreach { case (i, pos) =>
       if (processes.containsKey(i)) {
-        println(s"[$pos] -$i")
+        println(s"[$pos] stopping instance $i")
         val pr = processes.remove(i)
         pr.destroy()
       } else {
-        println(s"[$pos] +$i")
+        println(s"[$pos] starting instance +$i")
 
         processes.put(
           i,

@@ -18,21 +18,6 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
-/**
- * Demonstrates, using the low-level Processor APIs, how to implement the WordCount program
- * that computes a simple word occurrence histogram from an input text.
- * <p>
- * <strong>Note: This is simplified code that only works correctly for single partition input topics.
- * Check out {@link WordCountDemo} for a generic example.</strong>
- * <p>
- * In this example, the input stream reads from a topic named "streams-plaintext-input", where the values of messages
- * represent lines of text; and the histogram output is written to topic "streams-wordcount-processor-output" where each record
- * is an updated count of a single word.
- * <p>
- * Before running this example you must create the input topic and the output topic (e.g. via
- * {@code bin/kafka-topics.sh --create ...}), and write some data to the input topic (e.g. via
- * {@code bin/kafka-console-producer.sh}). Otherwise you won't see any data arriving in the output topic.
- */
 public final class Worker {
     static class WordCountProcessor implements Processor<String, Integer, String, Integer> {
         private KeyValueStore<String, Integer> kvStore;
