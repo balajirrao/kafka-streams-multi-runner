@@ -70,7 +70,7 @@ object Coordinator extends scala.App {
 //  )
 
   (1 to 1000000).foreach { i =>
-    1 to 100 foreach { x =>
+    1 to 1000 foreach { x =>
       producer.send(
         new ProducerRecord[String, Integer](s"$appId-input-topic", s"$x", i)
       )
@@ -84,21 +84,31 @@ object Coordinator extends scala.App {
         println(s"[$pos] stopping instance $i")
         val pr = processes.remove(i)
         pr.destroy()
-      } else {
+        pr.waitFor()
+      } else if (i > 0) {
         println(s"[$pos] starting instance +$i")
 
         processes.put(
           i,
           os.proc(Seq("java", "-jar", workerJar))
             .spawn(
-              env = Map(("APPLICATION_ID", appId), ("INSTANCE_ID", s"$pos")),
+              env = Map(
+                ("APPLICATION_ID", appId),
+                ("APPLICATION_COUNTER", s"$pos"),
+                ("APPLICATION_INSTANCE", s"$i")
+              ),
               stdout = os.PathRedirect(Path(s"$appId.$pos.log", os.pwd))
             )
         )
+      } else {
+        println(s"[$pos] noop")
       }
+
       Thread.sleep(15000)
     }
 
+    if (processes.isEmpty) {
+      println("All instances stopped")
+    }
   }
-
 }
